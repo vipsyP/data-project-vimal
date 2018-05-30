@@ -21,20 +21,18 @@ var chart = Highcharts.chart('container', {
 
 });
 
-
 function load() {
 
     console.log("starting retrieve request");
     $.ajax({
         type: "get",
-        url: 'http://localhost:3000/api/retrieve',
+        url: 'http://localhost:3000/api/numberOfMatches',
         contentType: 'application/json',
         success: function (items) {
             if (items == null) {
                 return false;
             }
             console.log("count of matches array: ", items);
-
 
             var chart = Highcharts.chart('container', {
 

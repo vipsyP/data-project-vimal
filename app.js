@@ -16,49 +16,57 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function () {
     console.log("connected to db");
 });
-// bring in models
+
+// bring in model
 let MatchModel = require('./models/match');
 
 // project directory
 app.use(express.static(__dirname + '/public'));
 
-// home route
-app.get("/", (req, res) => {
-    console.log("home dir!");
-    res.sendFile(path.join(__dirname + 'index.html'));
-});
+//get json file from csv file
+function getJSONfromCSV() {
 
-app.get('/api/retrieve', (req, res) => {
-    
-    // let fileInputName = 'csv/matches.csv';
-    // let fileOutputName = 'json/matches.json';
-    //csvToJson.fieldDelimiter(',').generateJsonFileFromCsv(fileInputName, fileOutputName);
+    let fileInputName = 'csv/matches.csv';
+    let fileOutputName = 'json/matches.json';
+    csvToJson.fieldDelimiter(',').generateJsonFileFromCsv(fileInputName, fileOutputName);
 
-    // delete all documents
-    // MatchModel.deleteMany({}, function (error) {
-    //     if (error) {
-    //         console.log("delete many error: " + error);
-    //         return;
-    //     }
-    //     console.log("deleted many");
-    // });
+}
+
+//clear from db collection
+function clearMatchesDB() {
+
+    MatchModel.deleteMany({}, function (error) {
+        if (error) {
+            console.log("delete many error: " + error);
+            return;
+        }
+        console.log("deleted many");
+    });
+
+}
+
+// populate db from JSON file
+function populateMatchesDB() {
 
     fs.readFile('json/matches.json', function (err, data) {
         if (err) {
             console.log("read file error: " + err);
             return;
         }
-        // res.send(data.toString());
-
         // insert all documents
-        //     MatchModel.insertMany(JSON.parse(data), function (error, docs) {
-        //         if (err) {
-        //             console.log("insert many error: " + err);
-        //             return;
-        //         }
-        //         console.log("inserted many");
-        //     });
+        MatchModel.insertMany(JSON.parse(data), function (error, docs) {
+            if (err) {
+                console.log("insert many error: " + err);
+                return;
+            }
+            console.log("inserted many");
+        });
     });
+
+}
+
+// find no of matches played each year--from matches database
+function findNoOfMatchesPlayed(req, res) {
 
     var noOfMatches = [];
     for (let i = 2008; i <= 2017; i++) {
@@ -74,10 +82,29 @@ app.get('/api/retrieve', (req, res) => {
             console.log("Value in array for year" + i.toString() + " : " + noOfMatches[i - 2008]);
         });
     }
+    // wait for the queries to finish
     setTimeout(function () {
         console.log("dis" + noOfMatches);
         res.send(noOfMatches);
-    }, 3000);
+    }, 1000);
+}
+
+// home route
+app.get("/", (req, res) => {
+    console.log("home dir!");
+    res.sendFile(path.join(__dirname + 'index.html'));
+});
+
+// get number of matches played per year array
+app.get('/api/numberOfMatches', (req, res) => {
+
+    // getJSONfromCSV();
+
+    // clearMatchesDB();
+
+    // populateMatchesDB();
+
+    findNoOfMatchesPlayed(req, res)
 
 })
 
