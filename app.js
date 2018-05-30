@@ -19,8 +19,17 @@ db.once('open', function () {
 // bring in models
 let MatchModel = require('./models/match');
 
-app.get('/', (req, res) => {
+// project directory
+app.use(express.static(__dirname + '/public'));
 
+// home route
+app.get("/", (req, res) => {
+    console.log("home dir!");
+    res.sendFile(path.join(__dirname + 'index.html'));
+});
+
+app.get('/api/retrieve', (req, res) => {
+    
     // let fileInputName = 'csv/matches.csv';
     // let fileOutputName = 'json/matches.json';
     //csvToJson.fieldDelimiter(',').generateJsonFileFromCsv(fileInputName, fileOutputName);
@@ -39,7 +48,7 @@ app.get('/', (req, res) => {
             console.log("read file error: " + err);
             return;
         }
-        res.send(data.toString());
+        // res.send(data.toString());
 
         // insert all documents
         //     MatchModel.insertMany(JSON.parse(data), function (error, docs) {
@@ -51,7 +60,7 @@ app.get('/', (req, res) => {
         //     });
     });
 
-    let noOfMatches = [];
+    var noOfMatches = [];
     for (let i = 2008; i <= 2017; i++) {
         MatchModel.count({
             season: i.toString()
@@ -67,9 +76,9 @@ app.get('/', (req, res) => {
     }
     setTimeout(function () {
         console.log("dis" + noOfMatches);
-    }, 5000);
+        res.send(noOfMatches);
+    }, 3000);
 
-    res.send(noOfMatches);
 })
 
 app.listen(3000, () => console.log('listening on port 3000!'))
