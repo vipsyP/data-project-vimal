@@ -103,10 +103,10 @@ function findNoOfMatchesPlayed(req, res) {
 async function findNoOfMatchesWon(req, res) {
     console.log("Received request to /api/stackedBarGraph");
 
-    let years = new Set();
     //find all the unique years
+    let years = new Set();
 
-    let promise = new Promise(function (resolve, reject) {
+    let yearsPromise = new Promise(function (resolve, reject) {
         MatchModel.find({}, {
             '_id': 0,
             'season': 1
@@ -120,10 +120,10 @@ async function findNoOfMatchesWon(req, res) {
         })
     });
 
-    let result = await promise;
-    console.log("does this work?: " + result);
+    let yearsResult = await yearsPromise;
+    console.log("does this work?: " + yearsResult);
 
-    result.forEach(function (arrayItem) {
+    yearsResult.forEach(function (arrayItem) {
         console.log("Years item: " + arrayItem);
         if (arrayItem.season.trim() != "")
             years.add(arrayItem.season);
@@ -131,131 +131,139 @@ async function findNoOfMatchesWon(req, res) {
     console.log("Years length: " + years.size);
     for (let year of years) console.log(year);
 
+    //find all the unique teams
+    let teams = new Set();
+
+    let teamsPromise = new Promise(function (resolve, reject) {
+        MatchModel.find({}, {
+            '_id': 0,
+            'winner': 1
+        }, function (err, docs) {
+
+            if (err) {
+                reject(error);
+            } else {
+                resolve(docs);
+            }
+        })
+    });
+
+    let teamsResult = await teamsPromise;
+    console.log("does this work?: " + teamsResult);
+
+    teamsResult.forEach(function (arrayItem) {
+        console.log("Teams item: " + arrayItem.winner);
+        if (arrayItem.winner.trim() != "")
+            teams.add(arrayItem.winner);
+    });
+    console.log("Teams length: " + teams.size);
+    for (let team of teams) console.log(team);
 
 
 
-}
-// let teams = findUniqueWinners();
-// let teams = new Set();
-// //find all the unique winners & years
-// MatchModel.find({}, {
-//     '_id': 0,
-//     'winner': 1
-// }, function (err, docs) {
-//     console.log("length of array retrieved: " + docs.length);
-//     docs.forEach(function (arrayItem) {
-//         // console.log(arrayItem.winner);
-//         if (arrayItem.winner.trim() != "")
-//             teams.add(arrayItem.winner);
-//     });
-// })
+
+    let noOfMatchesWon = [];
+    let forTheSeason = [];
+    console.log("forTheSeason: " + forTheSeason);
 
 
-// console.log("Teams size: " + teams.size);
-// for (let team of teams) console.log(team);
-
-// let noOfMatchesWon = [];
-// let forTheSeason = [];
-// console.log("forTheSeason: " + forTheSeason);
-
-
-// let i = 0,
-//     j = 0;
-// for (let year of years) {
-//     j=0;
-//     for (let team of teams) {
-//         console.log("J: "+j++);
-//     }
-// }
+    // let i = 0,
+    //     j = 0;
+    // for (let year of years) {
+    //     j=0;
+    //     for (let team of teams) {
+    //         console.log("J: "+j++);
+    //     }
+    // }
 
 
-//         let i = 0,
-//             j = 0;
+    let i = 0,
+        j = 0;
 
-//         for (let year of years) {
+    for (let year of years) {
 
-//             for (let team of teams) {
+        for (let team of teams) {
 
+            let teamsPromise = new Promise(function (resolve, reject) {
+                    MatchModel.count({
+                        season: year,
+                        winner: team
 
+                    }, function (err, c) {
+                        if (err) {
+                            console.log("count error: " + err);
+                            return;
+                        }
+                        forTheSeason[j] = c;
+                        // forTheSeason.splice(j++, 0, c); // insert c at index j, while deleting 0 items
+                        console.log("Number of matches won by " + team + " in " + year + " : " + c);
+                        //console.log("Value in array for year " + (i+2008).toString() + " : " + noOfMatches[i - 2008]);
 
-//                 MatchModel.count({
-//                     season: year,
-//                     winner: team
+                        j++;
+                        console.log("team.size: " + teams.size);
+                        console.log("value of j: " + j);
+                    });
+                }); 
+            } // end of inner for
 
-//                 }, function (err, c) {
-//                     if (err) {
-//                         console.log("count error: " + err);
-//                         return;
-//                     }
-//                     forTheSeason[j] = c;
-//                     // forTheSeason.splice(j++, 0, c); // insert c at index j, while deleting 0 items
-//                     console.log("Number of matches won by " + team + " in " + year + " : " + c);
-//                     //console.log("Value in array for year " + (i+2008).toString() + " : " + noOfMatches[i - 2008]);
+            setTimeout(function () {
+                noOfMatchesWon[i] = forTheSeason;
+                //noOfMatchesWon.splice(i++, 0, forTheSeason);
+                //console.log(noOfMatchesWon[i]);
 
-//                     j++;
-//                     console.log("team.size: " + teams.size);
-//                     console.log("value of j: " + j);
-//                 });
-//             } // end of inner for
+                i++;
+                console.log("value of i: " + i);
 
-//             setTimeout(function () {
-//                 noOfMatchesWon[i] = forTheSeason;
-//                 //noOfMatchesWon.splice(i++, 0, forTheSeason);
-//                 //console.log(noOfMatchesWon[i]);
+                j = 0;
+                forTheSeason = [];
+            }, 1000);
 
-//                 i++;
-//                 console.log("value of i: " + i);
-
-//                 j = 0;
-//                 forTheSeason = [];
-//             }, 1000);
-
-//         } // end of outer for
-//         setTimeout(function () {
-//             console.log("2D array: " + noOfMatchesWon);
-//             res.send(noOfMatchesWon);
-//         }, 1000);
-//     }, 1000);
-// }
-
-// home route
-app.get("/", (req, res) => {
-    console.log("home dir!");
-    res.sendFile(path.join(__dirname + 'index.html'));
-});
-
-// get number of matches played per year array
-// app.get('/api/uniqueYears', (req, res) => {
-
-//     findUniqueWinners(req, res);
-
-// })
+        } // end of outer for
+        setTimeout(function () {
+            console.log("2D array: " + noOfMatchesWon);
+            res.send(noOfMatchesWon);
+        }, 1000);
+    }
 
 
-// get number of matches played per year array
-app.get('/api/numberOfMatches', (req, res) => {
+    // home route
+    app.get("/", (req, res) => {
+        console.log("home dir!");
+        res.sendFile(path.join(__dirname + 'index.html'));
+    });
 
-    // getJSONfromCSV();
+    // get number of matches played per year array
+    // app.get('/api/uniqueYears', (req, res) => {
 
-    // clearMatchesDB();
+    //     findUniqueWinners(req, res);
 
-    // populateMatchesDB();
+    // })
 
-    findNoOfMatchesPlayed(req, res);
 
-})
+    // get number of matches played per year array
+    app.get('/api/numberOfMatches', (req, res) => {
 
-// get number of matches played per year array
-app.get('/api/stackedBarGraph', (req, res) => {
+        // getJSONfromCSV();
 
-    // getJSONfromCSV();
+        // clearMatchesDB();
 
-    // clearMatchesDB();
+        // populateMatchesDB();
 
-    // populateMatchesDB();
+        findNoOfMatchesPlayed(req, res);
 
-    findNoOfMatchesWon(req, res);
+    })
 
-})
+    // get number of matches played per year array
+    app.get('/api/stackedBarGraph', (req, res) => {
 
-app.listen(3000, () => console.log('listening on port 3000!'));
+        // getJSONfromCSV();
+
+        // clearMatchesDB();
+
+        // populateMatchesDB();
+
+        findNoOfMatchesWon(req, res);
+
+    })
+
+    app.listen(3000, () => console.log('listening on port 3000!'));
