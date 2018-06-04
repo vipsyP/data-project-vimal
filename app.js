@@ -114,6 +114,15 @@ function findNoOfMatchesPlayed(req, res) {
 
 }
 
+//Used for sorting by _.id --examine this
+function compare(a, b) {
+    if (a._id < b._id)
+        return -1;
+    if (a._id > b._id)
+        return 1;
+    return 0;
+}
+
 // find no of matches won by each team over the years--from matches database
 async function findNoOfMatchesWon(req, res) {
     console.log("Received request to /api/stackedBarGraph");
@@ -182,6 +191,7 @@ async function findNoOfMatchesWon(req, res) {
     let forTheSeason = [];
     let i = 0;
     let teamsForTheYear;
+    let missingTeamObject;
 
 
     for (let year of years) {
@@ -210,50 +220,53 @@ async function findNoOfMatchesWon(req, res) {
                 console.log("error bro: " + err);
             } else {
                 console.log("\n\nYear: " + year);
-                //console.log("this works!");
-                //console.log("result: " + result);
-                //console.log("result type: " + typeof result);
                 result.forEach(function (element) {
                     console.log("" + element._id + " won " + element.count + " matches");
                 });
 
+                //insert teams who did not play during this season & set count to 0
 
-                console.log("print this!");
+                //array of teams that did play for this season
                 teamsForTheYear = [];
                 for (let item of result) {
                     teamsForTheYear.push(item._id);
                 }
+                console.log("teamsForTheYear: " + teamsForTheYear);
 
-                console.log("teamsForTheYear: "+ teamsForTheYear);
-
+                // iterate through all the teams, and check who did not play this year
                 for (let team of teams) {
-                        if (teamsForTheYear.indexOf(team) == -1) {
-                            console.log("year " + year + "missing team: " + team);
-                            //console.log("typeof year " + typeof year + "typeof missing team: " + typeof team);
-                            //console.log(result);
+
+                    // if this team did not play this year, add it to this year with count=0
+                    if (teamsForTheYear.indexOf(team) == -1) {
+                        console.log("year " + year + ", missing team: " + team);
+                        missingTeamObject = {
+                            _id: team,
+                            count: 0
+                        };
+                        result.push(missingTeamObject);
+                        console.log("new result: ");
+                        for (resu of result) {
+                            console.log(resu);
                         }
-                        // console.log(item);
-                        // console.log("item._id:" + item._id);
-                        // console.log("item._id typeof:" +typeof item._id);
+                        console.log("___________________________________________________");
+                    }
+                }
+                console.log();
+                console.log("*********************SORT IT***********************");
+                console.log("___________________________________________________");
+                console.log();
+                //sort result objects by ._id
+                result.sort(compare);
+                for (resu of result) {
+                    console.log(resu);
                 }
 
-
-
-
-
-
-
-                forTheSeason[i] = result;
-
-
+                forTheSeason[year-2008] = result;
 
                 if (i == Number(years.size) - 1) {
                     console.log("final i: " + i + ", year.size: " + years.size);
 
-
-
                     res.send(forTheSeason);
-
 
                 }
                 console.log("i: " + i + ", year.size: " + years.size);
