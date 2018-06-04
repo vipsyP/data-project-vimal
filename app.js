@@ -79,24 +79,39 @@ function findUniqueWinners(req, res) {
 function findNoOfMatchesPlayed(req, res) {
     console.log("Received request to /api/numberOfMatches");
     var noOfMatches = [];
-    for (let i = 2008; i <= 2017; i++) {
-        MatchModel.count({
-            season: i.toString()
-        }, function (err, c) {
-            if (err) {
-                console.log("count error: " + err);
-                return;
-            }
-            noOfMatches.splice(i - 2008, 0, c); // insert c at index i-2008, while deleting 0 items
-            console.log("Number of matches played in " + i.toString() + " : " + c);
-            console.log("Value in array for year" + i.toString() + " : " + noOfMatches[i - 2008]);
-        });
-    }
+    var noOfArrayItems = 0;
+
+    let playedPromise = new Promise(function (resolve, reject) {
+        for (let i = 2008; i <= 2017; i++) {
+            MatchModel.count({
+                season: i.toString()
+            }, function (err, c) {
+                if (err) {
+                    console.log("count error: " + err);
+                    return;
+                }
+                // noOfMatches.splice(i - 2008, 0, c); // insert c at index i-2008, while deleting 0 items
+                noOfMatches[i - 2008] = c;
+                console.log("Number of matches played in " + i.toString() + " : " + c);
+                console.log("Value in array for year" + i.toString() + " : " + noOfMatches[i - 2008]);
+                noOfArrayItems++;
+                console.log("no of array items: " + noOfArrayItems);
+                if (noOfArrayItems == 10) {
+                    resolve(noOfMatches);
+                    console.log("is there anybody out there?");
+                }
+            });
+
+        }
+    });
     // wait for the queries to finish
-    setTimeout(function () {
-        console.log("dis" + noOfMatches);
-        res.send(noOfMatches);
-    }, 1000);
+
+    playedPromise.then(function (result) {
+        console.log("dis" + result);
+        res.send(result);
+
+    });
+
 }
 
 // find no of matches won by each team over the years--from matches database
@@ -121,10 +136,10 @@ async function findNoOfMatchesWon(req, res) {
     });
 
     let yearsResult = await yearsPromise;
-    console.log("does this work?: " + yearsResult);
+    // console.log("does this work?: " + yearsResult);
 
     yearsResult.forEach(function (arrayItem) {
-        console.log("Years item: " + arrayItem);
+        //console.log("Years item: " + arrayItem);
         if (arrayItem.season.trim() != "")
             years.add(arrayItem.season);
     });
@@ -149,10 +164,10 @@ async function findNoOfMatchesWon(req, res) {
     });
 
     let teamsResult = await teamsPromise;
-    console.log("does this work?: " + teamsResult);
+    // console.log("does this work?: " + teamsResult);
 
     teamsResult.forEach(function (arrayItem) {
-        console.log("Teams item: " + arrayItem.winner);
+        //console.log("Teams item: " + arrayItem.winner);
         if (arrayItem.winner.trim() != "")
             teams.add(arrayItem.winner);
     });
@@ -162,9 +177,7 @@ async function findNoOfMatchesWon(req, res) {
 
 
 
-    let noOfMatchesWon = [];
-    let forTheSeason = [];
-    console.log("forTheSeason: " + forTheSeason);
+
 
 
     // let i = 0,
@@ -177,93 +190,133 @@ async function findNoOfMatchesWon(req, res) {
     // }
 
 
+
+    console.log("teams.size: " + teams.size);
+    console.log("years.size: " + years.size);
+
+    let wonByTeamsPromise = [];
+
+    var teamsMap = new Map();
+    var teamsKey;
+    var teamsValue;
+
+    var yearsMap = new Map();
+    var yearsKey;
+    var yearsValue;
+
     let i = 0,
         j = 0;
 
-    for (let year of years) {
+    // for (let year of years) {
 
+
+    wonByTeamsPromise[i] = new Promise(function (resolve, reject) {
+
+        loop1:
         for (let team of teams) {
 
-            let teamsPromise = new Promise(function (resolve, reject) {
-                    MatchModel.count({
-                        season: year,
-                        winner: team
+            MatchModel.count({
+                season: 2008,
+                winner: team
 
-                    }, function (err, c) {
-                        if (err) {
-                            console.log("count error: " + err);
-                            return;
-                        }
-                        forTheSeason[j] = c;
-                        // forTheSeason.splice(j++, 0, c); // insert c at index j, while deleting 0 items
-                        console.log("Number of matches won by " + team + " in " + year + " : " + c);
-                        //console.log("Value in array for year " + (i+2008).toString() + " : " + noOfMatches[i - 2008]);
+            }, function (err, c) {
+                if (err) {
+                    console.log("count error: " + err);
+                    return;
+                }
 
-                        j++;
-                        console.log("team.size: " + teams.size);
-                        console.log("value of j: " + j);
-                    });
-                }); 
-            } // end of inner for
+                teamsKey = team;
+                teamsValue = c;
+                teamsMap.set(teamsKey, teamsValue);
 
-            setTimeout(function () {
-                noOfMatchesWon[i] = forTheSeason;
-                //noOfMatchesWon.splice(i++, 0, forTheSeason);
-                //console.log(noOfMatchesWon[i]);
+                console.log("Number of matches won by " + team + " in " + 2008 + " : " + c);
+                console.log("i: " + i + ", j: "+j);
 
-                i++;
-                console.log("value of i: " + i);
-
-                j = 0;
-                forTheSeason = [];
-            }, 1000);
-
-        } // end of outer for
-        setTimeout(function () {
-            console.log("2D array: " + noOfMatchesWon);
-            res.send(noOfMatchesWon);
-        }, 1000);
-    }
-
-
-    // home route
-    app.get("/", (req, res) => {
-        console.log("home dir!");
-        res.sendFile(path.join(__dirname + 'index.html'));
+                if (j == 13) {
+                    console.log("\nfire in the hole");
+                    resolve(teamsMap);
+                    // break loop1;
+                }
+                j++;
+            }); // end of callback for async operation
+        } // end of inner for
     });
 
-    // get number of matches played per year array
-    // app.get('/api/uniqueYears', (req, res) => {
 
-    //     findUniqueWinners(req, res);
+    wonByTeamsPromise[i].then(function (result) {
 
-    // })
+        console.log("The result" + result + "end of result");
+        j = 0;
+
+        console.log("j1: "+j);
+        for (var [key, value] of result) {
+            console.log(key + ' = ' + value);
+        }
+        j = 0;
+        i++;
+        console.log("j1: "+j);
+        console.log("i1: "+i);
+
+        teamsMap = new Map();
+        teamsKey = undefined;
+        teamsValue = undefined;
+
+        // noOfMatchesWon[i] = forTheSeason;
+        // //noOfMatchesWon.splice(i++, 0, forTheSeason);
+        // //console.log(noOfMatchesWon[i]);
 
 
-    // get number of matches played per year array
-    app.get('/api/numberOfMatches', (req, res) => {
+    });
 
-        // getJSONfromCSV();
 
-        // clearMatchesDB();
 
-        // populateMatchesDB();
 
-        findNoOfMatchesPlayed(req, res);
+    // } // end of outer for
+    // setTimeout(function () {
+    //     console.log("2D array: " + noOfMatchesWon);
+    //     res.send(noOfMatchesWon);
+    // }, 1000);
+}
 
-    })
 
-    // get number of matches played per year array
-    app.get('/api/stackedBarGraph', (req, res) => {
+// home route
+app.get("/", (req, res) => {
+    console.log("home dir!");
+    res.sendFile(path.join(__dirname + 'index.html'));
+});
 
-        // getJSONfromCSV();
+// get number of matches played per year array
+// app.get('/api/uniqueYears', (req, res) => {
 
-        // clearMatchesDB();
+//     findUniqueWinners(req, res);
 
-        // populateMatchesDB();
+// })
 
-        findNoOfMatchesWon(req, res);
 
-    })
+// get number of matches played per year array
+app.get('/api/numberOfMatches', (req, res) => {
 
-    app.listen(3000, () => console.log('listening on port 3000!'));
+    // getJSONfromCSV();
+
+    // clearMatchesDB();
+
+    // populateMatchesDB();
+
+    findNoOfMatchesPlayed(req, res);
+
+})
+
+// get number of matches played per year array
+app.get('/api/stackedBarGraph', (req, res) => {
+
+    // getJSONfromCSV();
+
+    // clearMatchesDB();
+
+    // populateMatchesDB();
+
+    findNoOfMatchesWon(req, res);
+
+})
+
+app.listen(3000, () => console.log('listening on port 3000!'));
