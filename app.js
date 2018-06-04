@@ -174,99 +174,183 @@ async function findNoOfMatchesWon(req, res) {
     console.log("Teams length: " + teams.size);
     for (let team of teams) console.log(team);
 
-
-
-
-
-
-
-    // let i = 0,
-    //     j = 0;
-    // for (let year of years) {
-    //     j=0;
-    //     for (let team of teams) {
-    //         console.log("J: "+j++);
-    //     }
-    // }
-
-
-
     console.log("teams.size: " + teams.size);
     console.log("years.size: " + years.size);
 
-    let wonByTeamsPromise = [];
-
-    var teamsMap = new Map();
-    var teamsKey;
-    var teamsValue;
-
-    var yearsMap = new Map();
-    var yearsKey;
-    var yearsValue;
-
-    let i = 0,
-        j = 0;
-
-    // for (let year of years) {
 
 
-    wonByTeamsPromise[i] = new Promise(function (resolve, reject) {
+    let forTheSeason = [];
+    let i = 0;
+    let teamsForTheYear;
 
-        loop1:
-        for (let team of teams) {
 
-            MatchModel.count({
-                season: 2008,
-                winner: team
+    for (let year of years) {
 
-            }, function (err, c) {
-                if (err) {
-                    console.log("count error: " + err);
-                    return;
+
+        MatchModel.aggregate([{
+                $match: {
+                    season: year,
+                    result: "normal"
+                }
+            }, {
+                $group: {
+                    _id: '$winner',
+                    count: {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    _id: 1
+                }
+            }
+        ], function (err, result) {
+            if (err) {
+                console.log("error bro: " + err);
+            } else {
+                console.log("\n\nYear: " + year);
+                //console.log("this works!");
+                //console.log("result: " + result);
+                //console.log("result type: " + typeof result);
+                result.forEach(function (element) {
+                    console.log("" + element._id + " won " + element.count + " matches");
+                });
+
+
+                console.log("print this!");
+                teamsForTheYear = [];
+                for (let item of result) {
+                    teamsForTheYear.push(item._id);
                 }
 
-                teamsKey = team;
-                teamsValue = c;
-                teamsMap.set(teamsKey, teamsValue);
+                console.log("teamsForTheYear: "+ teamsForTheYear);
 
-                console.log("Number of matches won by " + team + " in " + 2008 + " : " + c);
-                console.log("i: " + i + ", j: "+j);
-
-                if (j == 13) {
-                    console.log("\nfire in the hole");
-                    resolve(teamsMap);
-                    // break loop1;
+                for (let team of teams) {
+                        if (teamsForTheYear.indexOf(team) == -1) {
+                            console.log("year " + year + "missing team: " + team);
+                            //console.log("typeof year " + typeof year + "typeof missing team: " + typeof team);
+                            //console.log(result);
+                        }
+                        // console.log(item);
+                        // console.log("item._id:" + item._id);
+                        // console.log("item._id typeof:" +typeof item._id);
                 }
-                j++;
-            }); // end of callback for async operation
-        } // end of inner for
-    });
 
 
-    wonByTeamsPromise[i].then(function (result) {
-
-        console.log("The result" + result + "end of result");
-        j = 0;
-
-        console.log("j1: "+j);
-        for (var [key, value] of result) {
-            console.log(key + ' = ' + value);
-        }
-        j = 0;
-        i++;
-        console.log("j1: "+j);
-        console.log("i1: "+i);
-
-        teamsMap = new Map();
-        teamsKey = undefined;
-        teamsValue = undefined;
-
-        // noOfMatchesWon[i] = forTheSeason;
-        // //noOfMatchesWon.splice(i++, 0, forTheSeason);
-        // //console.log(noOfMatchesWon[i]);
 
 
-    });
+
+
+
+                forTheSeason[i] = result;
+
+
+
+                if (i == Number(years.size) - 1) {
+                    console.log("final i: " + i + ", year.size: " + years.size);
+
+
+
+                    res.send(forTheSeason);
+
+
+                }
+                console.log("i: " + i + ", year.size: " + years.size);
+                i++;
+                console.log("this also");
+            }
+        });
+
+    }
+
+
+
+    // let wonByTeamsPromise = [];
+
+    // var teamsMap = new Map();
+    // var teamsKey;
+    // var teamsValue;
+
+    // var yearsMap = new Map();
+    // var yearsKey;
+    // var yearsValue;
+
+    // let i = 0,
+    //     j = 0;
+    // let innerLoopBreak = false;
+
+
+    // // for (let year of years) {
+
+    // wonByTeamsPromise[i] = new Promise(function (resolve, reject) {
+
+    //     innerLoop: for (let team of teams) {
+
+    //         console.log("innerLoopBreak"+innerLoopBreak);
+
+    //         if (innerLoopBreak == true) {
+    //             console.log("broke");
+    //             innerLoopBreak = false;
+    //             break innerLoop;
+    //         }
+
+    //         MatchModel.count({
+    //             season: 2008,
+    //             winner: team
+
+    //         }, function (err, c) {
+    //             if (err) {
+    //                 console.log("count error: " + err);
+    //                 return;
+    //             }
+
+    //             teamsKey = team;
+    //             teamsValue = c;
+    //             teamsMap.set(teamsKey, teamsValue);
+
+    //             console.log("Number of matches won by " + team + " in " + 2008 + " : " + c);
+    //             console.log("i: " + i + ", j: " + j);
+
+    //             if (j == 11) {
+    //                 // break innerLoop;
+    //                 innerLoopBreak = true;
+    //                 console.log("\nfire in the hole");
+    //                 resolve(teamsMap);
+    //             }
+    //             j++;
+    //         }); // end of callback for async operation
+    //     } // end of inner for
+    // });
+
+
+    // wonByTeamsPromise[i].then(function (result) {
+
+    //     console.log("The result" + result + "end of result");
+    //     j = 0;
+
+    //     console.log("j1: " + j);
+    //     for (var [key, value] of result) {
+    //         console.log(key + ' = ' + value);
+    //     }
+    //     j = 0;
+    //     i++;
+
+
+
+    //     console.log("j1: " + j);
+    //     console.log("i1: " + i);
+
+    //     teamsMap = new Map();
+    //     teamsKey = undefined;
+    //     teamsValue = undefined;
+
+    //     // noOfMatchesWon[i] = forTheSeason;
+    //     // //noOfMatchesWon.splice(i++, 0, forTheSeason);
+    //     // //console.log(noOfMatchesWon[i]);
+
+
+    // });
 
 
 
