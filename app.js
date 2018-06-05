@@ -145,10 +145,18 @@ function findNoOfMatchesPlayed(req, res) {
 }
 
 //Used for sorting by _.id --examine this
-function compare(a, b) {
+function compare_ID(a, b) {
     if (a._id < b._id)
         return -1;
     if (a._id > b._id)
+        return 1;
+    return 0;
+}
+
+function compareEcon(a, b) {
+    if (a.econ < b.econ)
+        return -1;
+    if (a.econ > b.econ)
         return 1;
     return 0;
 }
@@ -216,16 +224,12 @@ async function findNoOfMatchesWon(req, res) {
     console.log("teams.size: " + teams.size);
     console.log("years.size: " + years.size);
 
-
-
     let forTheSeason = [];
     let i = 0;
     let teamsForTheYear;
     let missingTeamObject;
 
-
     for (let year of years) {
-
 
         MatchModel.aggregate([{
                 $match: {
@@ -287,7 +291,7 @@ async function findNoOfMatchesWon(req, res) {
                 console.log("___________________________________________________");
                 console.log();
                 //sort result objects by ._id
-                result.sort(compare);
+                result.sort(compare_ID);
                 for (resu of result) {
                     console.log(resu);
                 }
@@ -345,6 +349,69 @@ function findExtraRunsConceded(req, res) {
 
 }
 
+function findTopEconomicalBowlers(req, res) {
+
+    console.log("In here!!!!!!!!!!!");
+    DeliveryModel.aggregate([{
+
+            // match 2016
+            $match: {
+                match_id: {
+                    $lte: 576
+                },
+                match_id: {
+                    $gte: 518
+                },
+            }
+        },
+        // group documents by bowler
+        // sum (total_runs - bye_runs - legbye_runs) for each bowler
+        {
+            $group: {
+                _id: '$bowler',
+                runs: { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  
+ 
+                balls: { "$sum": 1},
+
+                // econ: {
+                //     "$divide": [ { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  { "$sum": 1}] 
+                // }
+            }
+        },
+        {
+            $sort: {
+                runs: -1
+            }
+        }
+    ], function (err, items) {
+        console.log("Them result: "+JSON.stringify(items));
+
+        let econArray = [];
+        let econObj;
+
+        for(item of items) {
+            //console.log(item);
+            console.log("bowler: "+item._id+", runs: "+item.runs+ ", balls: "+item.balls);
+
+            econObj = {
+                _id: item._id,
+                econ: item.runs / item.balls * 6
+            };
+            
+            econArray.push(econObj);
+            // console.log(typeof item);
+        }
+
+        econArray.sort(compareEcon);
+
+        let topTenEconArray = econArray.slice(0, 10);
+
+        //res.send(JSON.stringify(items));
+        //res.send(JSON.stringify(items)+"<br><br><br>"+JSON.stringify(econArray)+"<br><br><br>"+JSON.stringify(topTenEconArray));
+        res.send(topTenEconArray);
+    });
+
+}
 
 // home route
 app.get("/", (req, res) => {
@@ -389,13 +456,26 @@ app.get('/api/stackedBarGraph', (req, res) => {
 // get extra runs conceded per team in 2016
 app.get('/api/extraRunsConceded', (req, res) => {
 
-    console.log("hello 1!");
+    console.log("hello 3!");
 
     //getJSONfromDeliveriesCSV();
 
     //populateDeliveriesDB();
 
     findExtraRunsConceded(req, res);
+
+})
+
+// get extra runs conceded per team in 2016
+app.get('/api/topEconomicalBowlers', (req, res) => {
+
+    console.log("hello 4!");
+
+    //getJSONfromDeliveriesCSV();
+
+    //populateDeliveriesDB();
+
+    findTopEconomicalBowlers(req, res);
 
 })
 

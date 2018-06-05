@@ -228,6 +228,66 @@ function plotExtraRunsConceded() {
 
 }
 
-function plotTopEconomicalBowlers() {}
+function plotTopEconomicalBowlers() {
+    console.log("starting request to /api/topEconomicalBowlers");
+
+    $.ajax({
+        type: "get",
+        url: 'http://localhost:3000/api/topEconomicalBowlers',
+        contentType: 'application/json',
+        success: function (items) {
+            //items = JSON.parse(items);
+            console.log("top ten economical bowlers: ", items);
+            console.log("typeof items: ", typeof items);
+
+            if (items == null) {
+                return false;
+            }
+
+            bowlers = [];
+            economy = [];
+
+            for (item of items) {
+                console.log("item._id: ", item._id);
+                bowlers.push(item._id);
+                console.log("item.econ: ", item.econ);
+                economy.push(item.econ);
+            }
+            for (bowler of bowlers) {
+                console.log("bowler: ", bowler);
+            }
+            for (economy_item of economy) {
+                console.log("economy item: ", economy_item);
+            }
+
+
+
+            var chart = Highcharts.chart('container', {
+
+                title: {
+                    text: 'Top ten economical bowlers'
+                },
+
+                // subtitle: {
+                //     text: 'Plain'
+                // },
+
+                xAxis: {
+                    categories: bowlers
+                },
+
+                series: [{
+                    type: 'column',
+                    colorByPoint: true,
+                    data: economy,
+                    showInLegend: false
+                }]
+
+            });
+        }
+    });
+
+
+}
 
 function plotStory() {}
