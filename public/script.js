@@ -90,7 +90,7 @@ function plotStackedBarGraph() {
                     type: 'bar'
                 },
                 title: {
-                    text: 'Stacked bar chart'
+                    text: 'No. of matches won by the teams each year'
                 },
                 xAxis: {
                     categories: ["Chennai Super Kings",
@@ -167,7 +167,66 @@ function plotStackedBarGraph() {
     });
 }
 
-function plotExtraRunsConceded() {}
+function plotExtraRunsConceded() {
+    console.log("starting request to /api/extraRunsConceded");
+
+    $.ajax({
+        type: "get",
+        url: 'http://localhost:3000/api/extraRunsConceded',
+        contentType: 'application/json',
+        success: function (items) {
+
+            console.log("count extra runs conceded per team in 2016: ", items);
+
+
+            if (items == null) {
+                return false;
+            }
+
+            teams = [];
+            extra_runs = [];
+
+            for (item of items) {
+                //console.log("item._id: ", item._id);
+                teams.push(item._id);
+                //console.log("item.total: ", item.total);
+                extra_runs.push(item.total);
+            }
+            // for (team of teams) {
+            //     console.log("team: ", team);
+            // }
+            // for (extra_runs_item of extra_runs) {
+            //     console.log("extra runs: ", extra_runs_item);
+            // }
+
+
+
+            var chart = Highcharts.chart('container', {
+
+                title: {
+                    text: 'No. of runs conceded by teams in 2016'
+                },
+
+                // subtitle: {
+                //     text: 'Plain'
+                // },
+
+                xAxis: {
+                    categories: teams
+                },
+
+                series: [{
+                    type: 'column',
+                    colorByPoint: true,
+                    data: extra_runs,
+                    showInLegend: false
+                }]
+
+            });
+        }
+    });
+
+}
 
 function plotTopEconomicalBowlers() {}
 

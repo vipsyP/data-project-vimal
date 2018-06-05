@@ -17,14 +17,15 @@ db.once('open', function () {
     console.log("connected to db");
 });
 
-// bring in model
+// bring in models
 let MatchModel = require('./models/match');
+let DeliveryModel = require('./models/delivery');
 
 // project directory
 app.use(express.static(__dirname + '/public'));
 
 //get json file from csv file
-function getJSONfromCSV() {
+function getJSONfromMatchesCSV() {
 
     let fileInputName = 'csv/matches.csv';
     let fileOutputName = 'json/matches.json';
@@ -63,6 +64,35 @@ function populateMatchesDB() {
         });
     });
 
+}
+
+
+//get json file from csv file
+function getJSONfromDeliveriesCSV() {
+
+    let fileInputName = 'csv/deliveries.csv';
+    let fileOutputName = 'json/deliveries.json';
+    csvToJson.fieldDelimiter(',').generateJsonFileFromCsv(fileInputName, fileOutputName);
+
+}
+
+// populate db from JSON file
+function populateDeliveriesDB() {
+
+    fs.readFile('json/deliveries.json', function (err, data) {
+        if (err) {
+            console.log("read file error: " + err);
+            return;
+        }
+        // insert all documents
+        DeliveryModel.insertMany(JSON.parse(data), function (error, docs) {
+            if (err) {
+                console.log("insert many error: " + err);
+                return;
+            }
+            console.log("inserted many");
+        });
+    });
 }
 
 // find all unique years in the db
@@ -224,6 +254,7 @@ async function findNoOfMatchesWon(req, res) {
                     console.log("" + element._id + " won " + element.count + " matches");
                 });
 
+                console.log("result: " + result);
                 //insert teams who did not play during this season & set count to 0
 
                 //array of teams that did play for this season
@@ -278,6 +309,43 @@ async function findNoOfMatchesWon(req, res) {
 }
 
 
+function findExtraRunsConceded(req, res) {
+
+    DeliveryModel.aggregate([{
+
+            // match 2016
+            $match: {
+                match_id: {
+                    $lt: 637
+                },
+                match_id: {
+                    $gt: 576
+                }
+            }
+        },
+        // group documents by bowling team
+        // sum exta runs field for each bowling team
+        {
+            $group: {
+                _id: '$bowling_team',
+                total: {
+                    $sum: "$extra_runs"
+                }
+            }
+        },
+        {
+            $sort: {
+                _id: 1
+            }
+        }
+    ], function (err, result) {
+        console.log(JSON.stringify(result));
+        res.send(result);
+    });
+
+}
+
+
 // home route
 app.get("/", (req, res) => {
     console.log("home dir!");
@@ -295,7 +363,7 @@ app.get("/", (req, res) => {
 // get number of matches played per year array
 app.get('/api/numberOfMatches', (req, res) => {
 
-    // getJSONfromCSV();
+    // getJSONfromMatchesCSV();
 
     // clearMatchesDB();
 
@@ -308,7 +376,7 @@ app.get('/api/numberOfMatches', (req, res) => {
 // get number of matches played per year array
 app.get('/api/stackedBarGraph', (req, res) => {
 
-    // getJSONfromCSV();
+    // getJSONfromMatchesCSV();
 
     // clearMatchesDB();
 
@@ -317,5 +385,19 @@ app.get('/api/stackedBarGraph', (req, res) => {
     findNoOfMatchesWon(req, res);
 
 })
+
+// get extra runs conceded per team in 2016
+app.get('/api/extraRunsConceded', (req, res) => {
+
+    console.log("hello 1!");
+
+    //getJSONfromDeliveriesCSV();
+
+    //populateDeliveriesDB();
+
+    findExtraRunsConceded(req, res);
+
+})
+
 
 app.listen(3000, () => console.log('listening on port 3000!'));
