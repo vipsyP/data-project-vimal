@@ -69,6 +69,20 @@ function plotStackedBarGraph() {
         contentType: 'application/json',
         success: function (itemsOfItems) {
 
+            // retain only the count values
+            let arrayOfArrays = [];
+            let arrays = [];
+
+            for (items of itemsOfItems) {
+                arrays = [];
+                for (item of items) {
+                    arrays.push(item.count);
+                }
+                arrayOfArrays.push(arrays);
+            }
+            console.log(arrayOfArrays);
+            itemsOfItems = arrayOfArrays;
+
             console.log("count of matches won by each team over the years array: ", itemsOfItems);
 
             Highcharts.chart('container', {
@@ -79,26 +93,26 @@ function plotStackedBarGraph() {
                     text: 'Stacked bar chart'
                 },
                 xAxis: {
-                    categories: ["Sunrisers Hyderabad",
-                        "Rising Pune Supergiant",
-                        "Kolkata Knight Riders",
-                        "Kings XI Punjab",
-                        "Royal Challengers Bangalore",
-                        "Mumbai Indians",
+                    categories: ["Chennai Super Kings",
+                        "Deccan Chargers",
                         "Delhi Daredevils",
                         "Gujarat Lions",
-                        "Chennai Super Kings",
-                        "Rajasthan Royals",
-                        "Deccan Chargers",
-                        "Pune Warriors",
+                        "Kings XI Punjab",
                         "Kochi Tuskers Kerala",
-                        "Rising Pune Supergiantsc"
+                        "Kolkata Knight Riders",
+                        "Mumbai Indians",
+                        "Pune Warriors",
+                        "Rajasthan Royals",
+                        "Rising Pune Supergiant",
+                        "Rising Pune Supergiants",
+                        "Royal Challengers Bangalore",
+                        "Sunrisers Hyderabad"
                     ]
                 },
                 yAxis: {
                     min: 0,
                     title: {
-                        text: 'Total fruit consumption'
+                        text: 'number of matches won'
                     }
                 },
                 legend: {
