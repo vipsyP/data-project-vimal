@@ -8,7 +8,7 @@ function load() {
     });
 }
 
-
+// Graph 1
 function plotNoOfMatchesPlayed() {
     console.log("starting request to /api/numberOfMatches");
     $.ajax({
@@ -51,21 +51,9 @@ function plotNoOfMatchesPlayed() {
     })
 }
 
+// Graph 2
 function plotStackedBarGraph() {
     console.log("starting request to /api/stackedBarGraph");
-
-    //find unique years
-    // let years = new Set();
-
-    // $.ajax({
-    //     type: "get",
-    //     url: 'http://localhost:3000/api/stackedBarGraph',
-    //     contentType: 'application/json',
-    //     success: function (items) {
-
-    //     }
-    // }); 
-
 
     $.ajax({
         type: "get",
@@ -171,6 +159,7 @@ function plotStackedBarGraph() {
     });
 }
 
+// Graph 3
 function plotExtraRunsConceded() {
     console.log("starting request to /api/extraRunsConceded");
 
@@ -182,7 +171,6 @@ function plotExtraRunsConceded() {
 
             console.log("count extra runs conceded per team in 2016: ", items);
 
-
             if (items == null) {
                 return false;
             }
@@ -191,19 +179,9 @@ function plotExtraRunsConceded() {
             extra_runs = [];
 
             for (item of items) {
-                //console.log("item._id: ", item._id);
                 teams.push(item._id);
-                //console.log("item.total: ", item.total);
                 extra_runs.push(item.total);
             }
-            // for (team of teams) {
-            //     console.log("team: ", team);
-            // }
-            // for (extra_runs_item of extra_runs) {
-            //     console.log("extra runs: ", extra_runs_item);
-            // }
-
-
 
             var chart = Highcharts.chart('container', {
 
@@ -211,9 +189,6 @@ function plotExtraRunsConceded() {
                     text: 'No. of runs conceded by teams in 2016'
                 },
 
-                // subtitle: {
-                //     text: 'Plain'
-                // },
                 yAxis: {
                     title: {
                         text: 'No. of runs conceded'
@@ -229,13 +204,12 @@ function plotExtraRunsConceded() {
                     data: extra_runs,
                     showInLegend: false
                 }]
-
             });
         }
     });
-
 }
 
+// Graph 4
 function plotTopEconomicalBowlers() {
     console.log("starting request to /api/topEconomicalBowlers");
 
@@ -244,8 +218,6 @@ function plotTopEconomicalBowlers() {
         url: 'http://localhost:3000/api/topEconomicalBowlers',
         contentType: 'application/json',
         success: function (items) {
-            //items = JSON.parse(items);
-
 
             console.log("dur dur: " + JSON.stringify(items));
             console.log("top ten economical bowlers: ", items);
@@ -271,17 +243,11 @@ function plotTopEconomicalBowlers() {
                 console.log("economy item: ", economy_item);
             }
 
-
-
             var chart = Highcharts.chart('container', {
 
                 title: {
                     text: 'Top ten economical bowlers'
                 },
-
-                // subtitle: {
-                //     text: 'Plain'
-                // },
 
                 yAxis: {
                     title: {
@@ -298,14 +264,12 @@ function plotTopEconomicalBowlers() {
                     data: economy,
                     showInLegend: false
                 }]
-
             });
         }
     });
-
-
 }
 
+// Graph 5
 function plotStory() {
 
     console.log("you clicked plot story");
@@ -403,7 +367,6 @@ function plotStory() {
                     ]
                 }]
             });
-
         }
     });
 }

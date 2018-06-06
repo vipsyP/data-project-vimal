@@ -24,6 +24,24 @@ let DeliveryModel = require('./models/delivery');
 // project directory
 app.use(express.static(__dirname + '/public'));
 
+// compare by _.id -- used by sort()
+function compare_ID(a, b) {
+    if (a._id < b._id)
+        return -1;
+    if (a._id > b._id)
+        return 1;
+    return 0;
+}
+
+// compare by econ -- used by sort()
+function compareEcon(a, b) {
+    if (a.econ < b.econ)
+        return -1;
+    if (a.econ > b.econ)
+        return 1;
+    return 0;
+}
+
 //get json file from csv file
 function getJSONfromMatchesCSV() {
 
@@ -66,45 +84,6 @@ function populateMatchesDB() {
 
 }
 
-
-//get json file from csv file
-function getJSONfromDeliveriesCSV() {
-
-    let fileInputName = 'csv/deliveries.csv';
-    let fileOutputName = 'json/deliveries.json';
-    csvToJson.fieldDelimiter(',').generateJsonFileFromCsv(fileInputName, fileOutputName);
-
-}
-
-// populate db from JSON file
-function populateDeliveriesDB() {
-
-    fs.readFile('json/deliveries.json', function (err, data) {
-        if (err) {
-            console.log("read file error: " + err);
-            return;
-        }
-        // insert all documents
-        DeliveryModel.insertMany(JSON.parse(data), function (error, docs) {
-            if (err) {
-                console.log("insert many error: " + err);
-                return;
-            }
-            console.log("inserted many");
-        });
-    });
-}
-
-// find all unique years in the db
-async function findSeasons(req, res) {
-
-}
-
-// find unique winners in the db
-function findUniqueWinners(req, res) {
-
-}
-
 // find no of matches played each year--from matches database
 function findNoOfMatchesPlayed(req, res) {
     console.log("Received request to /api/numberOfMatches");
@@ -131,34 +110,16 @@ function findNoOfMatchesPlayed(req, res) {
                     console.log("is there anybody out there?");
                 }
             });
-
         }
     });
     // wait for the queries to finish
 
     playedPromise.then(function (result) {
+
         console.log("dis" + result);
         res.send(result);
 
     });
-
-}
-
-//Used for sorting by _.id --examine this
-function compare_ID(a, b) {
-    if (a._id < b._id)
-        return -1;
-    if (a._id > b._id)
-        return 1;
-    return 0;
-}
-
-function compareEcon(a, b) {
-    if (a.econ < b.econ)
-        return -1;
-    if (a.econ > b.econ)
-        return 1;
-    return 0;
 }
 
 // find no of matches won by each team over the years--from matches database
@@ -211,10 +172,8 @@ async function findNoOfMatchesWon(req, res) {
     });
 
     let teamsResult = await teamsPromise;
-    // console.log("does this work?: " + teamsResult);
 
     teamsResult.forEach(function (arrayItem) {
-        //console.log("Teams item: " + arrayItem.winner);
         if (arrayItem.winner.trim() != "")
             teams.add(arrayItem.winner);
     });
@@ -224,63 +183,63 @@ async function findNoOfMatchesWon(req, res) {
     console.log("teams.size: " + teams.size);
     console.log("years.size: " + years.size);
 
-    let forTheSeason = [];
+    // get relevant data from db
+    let allTeamsAllSeasons = [];
     let i = 0;
-    let teamsForTheYear;
-    let missingTeamObject;
+    let teamsThatPlayedThisYear; // array of teams that did play this season
+    let teamThatDidntPlayThisYear; // team that did not play this season
 
     for (let year of years) {
 
         MatchModel.aggregate([{
-                $match: {
-                    season: year,
-                    result: "normal"
-                }
-            }, {
-                $group: {
-                    _id: '$winner',
-                    count: {
-                        $sum: 1
-                    }
-                }
-            },
-            {
-                $sort: {
-                    _id: 1
+            $match: {
+                season: year,
+                result: "normal"
+            }
+        }, {
+            $group: {
+                _id: '$winner',
+                count: {
+                    $sum: 1
                 }
             }
-        ], function (err, result) {
+        }, {
+            $sort: {
+                _id: 1
+            }
+        }], function (err, allTeamsThisYear) {
             if (err) {
                 console.log("error bro: " + err);
             } else {
                 console.log("\n\nYear: " + year);
-                result.forEach(function (element) {
+                allTeamsThisYear.forEach(function (element) {
                     console.log("" + element._id + " won " + element.count + " matches");
                 });
 
-                console.log("result: " + result);
+                console.log("allTeamsThisYear: " + allTeamsThisYear);
+
                 //insert teams who did not play during this season & set count to 0
 
                 //array of teams that did play for this season
-                teamsForTheYear = [];
-                for (let item of result) {
-                    teamsForTheYear.push(item._id);
+                teamsThatPlayedThisYear = [];
+                for (let item of allTeamsThisYear) {
+                    teamsThatPlayedThisYear.push(item._id);
                 }
-                console.log("teamsForTheYear: " + teamsForTheYear);
+                console.log("teamsThatPlayedThisYear: " + teamsThatPlayedThisYear);
 
                 // iterate through all the teams, and check who did not play this year
                 for (let team of teams) {
 
                     // if this team did not play this year, add it to this year with count=0
-                    if (teamsForTheYear.indexOf(team) == -1) {
+                    if (teamsThatPlayedThisYear.indexOf(team) == -1) {
                         console.log("year " + year + ", missing team: " + team);
-                        missingTeamObject = {
+                        teamThatDidntPlayThisYear = {
                             _id: team,
                             count: 0
                         };
-                        result.push(missingTeamObject);
-                        console.log("new result: ");
-                        for (resu of result) {
+                        allTeamsThisYear.push(teamThatDidntPlayThisYear);
+                        console.log("new allTeamsThisYear: ");
+                        for (resu of allTeamsThisYear) {
                             console.log(resu);
                         }
                         console.log("___________________________________________________");
@@ -290,18 +249,18 @@ async function findNoOfMatchesWon(req, res) {
                 console.log("*********************SORT IT***********************");
                 console.log("___________________________________________________");
                 console.log();
-                //sort result objects by ._id
-                result.sort(compare_ID);
-                for (resu of result) {
+                //sort allTeamsThisYear objects by ._id
+                allTeamsThisYear.sort(compare_ID);
+                for (resu of allTeamsThisYear) {
                     console.log(resu);
                 }
 
-                forTheSeason[year - 2008] = result;
+                allTeamsAllSeasons[year - 2008] = allTeamsThisYear;
 
                 if (i == Number(years.size) - 1) {
                     console.log("final i: " + i + ", year.size: " + years.size);
 
-                    res.send(forTheSeason);
+                    res.send(allTeamsAllSeasons);
 
                 }
                 console.log("i: " + i + ", year.size: " + years.size);
@@ -311,7 +270,6 @@ async function findNoOfMatchesWon(req, res) {
         });
     }
 }
-
 
 function findExtraRunsConceded(req, res) {
 
@@ -328,7 +286,7 @@ function findExtraRunsConceded(req, res) {
             }
         },
         // group documents by bowling team
-        // sum exta runs field for each bowling team
+        // sum extra runs field for each bowling team
         {
             $group: {
                 _id: '$bowling_team',
@@ -351,7 +309,6 @@ function findExtraRunsConceded(req, res) {
 
 function findTopEconomicalBowlers(req, res) {
 
-
     //find (no. of balls that were either wides or no balls) per bowler for 2016
 
     let wideOrNoBallPromise = new Promise(function (resolve, reject) {
@@ -359,32 +316,28 @@ function findTopEconomicalBowlers(req, res) {
 
                 // match 2016
                 $match: {
+
                     match_id: {
                         $lte: 576
                     },
+
                     match_id: {
                         $gte: 518
                     },
                     //either a wide or a no ball
 
-                    $or: [
-
-                        {
+                    $or: [{
                             wide_runs: {
                                 $ne: 0
                             }
                         } // it is a wide ball when wide_runs != 0
-
                         ,
-
                         {
                             noball_runs: {
                                 $ne: 0
                             }
                         } // it is a no ball when no_runs != 0
-
                     ]
-
                 }
             },
             // group documents by bowler
@@ -407,8 +360,6 @@ function findTopEconomicalBowlers(req, res) {
 
     wideOrNoBallPromise.then(function (wideOrNoBallsArray) {
         //res.send(wideOrNoBallsArray);
-
-
         // find total no. of balls bowled--including wide & no balls
         // find runs--total - bye - legbye
         DeliveryModel.aggregate([{
@@ -439,10 +390,6 @@ function findTopEconomicalBowlers(req, res) {
                     balls: {
                         "$sum": 1
                     },
-
-                    // econ: {
-                    //     "$divide": [ { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  { "$sum": 1}] 
-                    // }
                 }
             }
         ], function (err, totalBallsAndRunsArray) {
@@ -451,7 +398,6 @@ function findTopEconomicalBowlers(req, res) {
             console.log("\n\n______________________________________________________________________________________________________________________________________");
             console.log("wide and no balls array \n\n" + JSON.stringify(wideOrNoBallsArray));
             console.log("______________________________________________________________________________________________________________________________________\n\n");
-
 
             totalBallsAndRunsArray.sort(compare_ID);
             console.log("\n\n______________________________________________________________________________________________________________________________________");
@@ -471,39 +417,34 @@ function findTopEconomicalBowlers(req, res) {
             console.log("new total balls and runs array \n\n" + JSON.stringify(totalBallsAndRunsArray));
             console.log("______________________________________________________________________________________________________________________________________\n\n");
 
+            // calculate economy 
             let econArray = [];
             let econObj;
 
             for (item of totalBallsAndRunsArray) {
-                //console.log(item);
                 console.log("bowler: " + item._id + ", runs: " + item.runs + ", balls: " + item.balls);
 
                 econObj = {
                     _id: item._id,
                     econ: item.runs / item.balls * 6
                 };
-
                 econArray.push(econObj);
-                // console.log(typeof item);
             }
 
+            //sort bowlers by economy
             econArray.sort(compareEcon);
 
+            //retain only top ten bowlers
             let topTenEconArray = econArray.slice(0, 10);
-
-            //res.send(JSON.stringify(items));
-            //res.send(JSON.stringify(items)+"<br><br><br>"+JSON.stringify(econArray)+"<br><br><br>"+JSON.stringify(topTenEconArray));
-            // res.send(JSON.stringify(wideOrNoBallsArray) + "<br><br><br>" + JSON.stringify(totalBallsAndRunsArray));
-            res.send(topTenEconArray);
+             res.send(topTenEconArray);
         });
     });
 }
 
+// Story chart
 function findMostPopularVenues(req, res) {
 
-    console.log("works*");
-    MatchModel.aggregate([
-        {
+    MatchModel.aggregate([{
             $group: {
                 _id: '$venue',
 
@@ -511,8 +452,6 @@ function findMostPopularVenues(req, res) {
                     "$sum": 1
                 },
             }
-
-
         },
 
         {
@@ -524,12 +463,8 @@ function findMostPopularVenues(req, res) {
         console.log(items);
         console.log(typeof items);
         let topTenVenues = items.slice(0, 9);
-        
-
 
         res.send(topTenVenues);
-        // res.send(items);
-        //resolve(items);
     });
 }
 
@@ -538,14 +473,6 @@ app.get("/", (req, res) => {
     console.log("home dir!");
     res.sendFile(path.join(__dirname + 'index.html'));
 });
-
-// get number of matches played per year array
-// app.get('/api/uniqueYears', (req, res) => {
-
-//     findUniqueWinners(req, res);
-
-// })
-
 
 // get number of matches played per year array
 app.get('/api/numberOfMatches', (req, res) => {
@@ -590,6 +517,5 @@ app.get('/api/mostPopularVenues', (req, res) => {
     findMostPopularVenues(req, res);
 
 })
-
 
 app.listen(3000, () => console.log('listening on port 3000!'));
