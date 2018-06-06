@@ -351,66 +351,186 @@ function findExtraRunsConceded(req, res) {
 
 function findTopEconomicalBowlers(req, res) {
 
-    console.log("In here!!!!!!!!!!!");
-    DeliveryModel.aggregate([{
 
-            // match 2016
-            $match: {
-                match_id: {
-                    $lte: 576
-                },
-                match_id: {
-                    $gte: 518
-                },
+    //find (no. of balls that were either wides or no balls) per bowler for 2016
+
+    let wideOrNoBallPromise = new Promise(function (resolve, reject) {
+        DeliveryModel.aggregate([{
+
+                // match 2016
+                $match: {
+                    match_id: {
+                        $lte: 576
+                    },
+                    match_id: {
+                        $gte: 518
+                    },
+                    //either a wide or a no ball
+
+                    $or: [
+
+                        {
+                            wide_runs: {
+                                $ne: 0
+                            }
+                        } // it is a wide ball when wide_runs != 0
+
+                        ,
+
+                        {
+                            noball_runs: {
+                                $ne: 0
+                            }
+                        } // it is a no ball when no_runs != 0
+
+                    ]
+
+                }
+            },
+            // group documents by bowler
+            // sum (total_runs - bye_runs - legbye_runs) for each bowler
+            {
+                $group: {
+                    _id: '$bowler',
+
+                    wideOrNoBalls: {
+                        "$sum": 1
+                    },
+                }
+            },
+        ], function (err, items) {
+            // res.send(items);
+            resolve(items);
+        });
+    });
+
+
+    wideOrNoBallPromise.then(function (wideOrNoBallsArray) {
+        //res.send(wideOrNoBallsArray);
+
+
+        // find total no. of balls bowled--including wide & no balls
+        // find runs--total - bye - legbye
+        DeliveryModel.aggregate([{
+
+                // match 2016
+                $match: {
+                    match_id: {
+                        $lte: 576
+                    },
+                    match_id: {
+                        $gte: 518
+                    },
+                }
+            },
+            // group documents by bowler
+            // sum (total_runs - bye_runs - legbye_runs) for each bowler
+            {
+                $group: {
+                    _id: '$bowler',
+                    runs: {
+                        "$sum": {
+                            "$subtract": [{
+                                "$add": ["$total_runs", "$bye_runs"]
+                            }, "$legbye_runs"]
+                        }
+                    },
+
+                    balls: {
+                        "$sum": 1
+                    },
+
+                    // econ: {
+                    //     "$divide": [ { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  { "$sum": 1}] 
+                    // }
+                }
             }
-        },
-        // group documents by bowler
-        // sum (total_runs - bye_runs - legbye_runs) for each bowler
+        ], function (err, totalBallsAndRunsArray) {
+
+            wideOrNoBallsArray.sort(compare_ID);
+            console.log("\n\n______________________________________________________________________________________________________________________________________");
+            console.log("wide and no balls array \n\n" + JSON.stringify(wideOrNoBallsArray));
+            console.log("______________________________________________________________________________________________________________________________________\n\n");
+
+
+            totalBallsAndRunsArray.sort(compare_ID);
+            console.log("\n\n______________________________________________________________________________________________________________________________________");
+            console.log("total balls and runs array \n\n" + JSON.stringify(totalBallsAndRunsArray));
+            console.log("______________________________________________________________________________________________________________________________________\n\n");
+
+            // subtract wideOrNo balls from total balls
+            wideOrNoBallsArray.forEach(function (wideOrNoBalls) {
+                totalBallsAndRunsArray.forEach(function (totalBallsAndRuns) {
+                    if (wideOrNoBalls._id == totalBallsAndRuns._id) {
+                        totalBallsAndRuns.balls -= wideOrNoBalls.wideOrNoBalls;
+                    }
+                });
+            });
+
+            console.log("\n\n______________________________________________________________________________________________________________________________________");
+            console.log("new total balls and runs array \n\n" + JSON.stringify(totalBallsAndRunsArray));
+            console.log("______________________________________________________________________________________________________________________________________\n\n");
+
+            let econArray = [];
+            let econObj;
+
+            for (item of totalBallsAndRunsArray) {
+                //console.log(item);
+                console.log("bowler: " + item._id + ", runs: " + item.runs + ", balls: " + item.balls);
+
+                econObj = {
+                    _id: item._id,
+                    econ: item.runs / item.balls * 6
+                };
+
+                econArray.push(econObj);
+                // console.log(typeof item);
+            }
+
+            econArray.sort(compareEcon);
+
+            let topTenEconArray = econArray.slice(0, 10);
+
+            //res.send(JSON.stringify(items));
+            //res.send(JSON.stringify(items)+"<br><br><br>"+JSON.stringify(econArray)+"<br><br><br>"+JSON.stringify(topTenEconArray));
+            // res.send(JSON.stringify(wideOrNoBallsArray) + "<br><br><br>" + JSON.stringify(totalBallsAndRunsArray));
+            res.send(topTenEconArray);
+        });
+    });
+}
+
+function findMostPopularVenues(req, res) {
+
+    console.log("works*");
+    MatchModel.aggregate([
         {
             $group: {
-                _id: '$bowler',
-                runs: { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  
- 
-                balls: { "$sum": 1},
+                _id: '$venue',
 
-                // econ: {
-                //     "$divide": [ { "$sum": {"$subtract": [{ "$add": ["$total_runs", "$bye_runs"]}, "$legbye_runs"]}    },  { "$sum": 1}] 
-                // }
+                matchesPlayed: {
+                    "$sum": 1
+                },
             }
+
+
         },
+
         {
             $sort: {
-                runs: -1
+                matchesPlayed: -1
             }
         }
     ], function (err, items) {
-        console.log("Them result: "+JSON.stringify(items));
+        console.log(items);
+        console.log(typeof items);
+        let topTenVenues = items.slice(0, 9);
+        
 
-        let econArray = [];
-        let econObj;
 
-        for(item of items) {
-            //console.log(item);
-            console.log("bowler: "+item._id+", runs: "+item.runs+ ", balls: "+item.balls);
-
-            econObj = {
-                _id: item._id,
-                econ: item.runs / item.balls * 6
-            };
-            
-            econArray.push(econObj);
-            // console.log(typeof item);
-        }
-
-        econArray.sort(compareEcon);
-
-        let topTenEconArray = econArray.slice(0, 10);
-
-        //res.send(JSON.stringify(items));
-        //res.send(JSON.stringify(items)+"<br><br><br>"+JSON.stringify(econArray)+"<br><br><br>"+JSON.stringify(topTenEconArray));
-        res.send(topTenEconArray);
+        res.send(topTenVenues);
+        // res.send(items);
+        //resolve(items);
     });
-
 }
 
 // home route
@@ -443,12 +563,6 @@ app.get('/api/numberOfMatches', (req, res) => {
 // get number of matches played per year array
 app.get('/api/stackedBarGraph', (req, res) => {
 
-    // getJSONfromMatchesCSV();
-
-    // clearMatchesDB();
-
-    // populateMatchesDB();
-
     findNoOfMatchesWon(req, res);
 
 })
@@ -457,11 +571,6 @@ app.get('/api/stackedBarGraph', (req, res) => {
 app.get('/api/extraRunsConceded', (req, res) => {
 
     console.log("hello 3!");
-
-    //getJSONfromDeliveriesCSV();
-
-    //populateDeliveriesDB();
-
     findExtraRunsConceded(req, res);
 
 })
@@ -470,12 +579,15 @@ app.get('/api/extraRunsConceded', (req, res) => {
 app.get('/api/topEconomicalBowlers', (req, res) => {
 
     console.log("hello 4!");
-
-    //getJSONfromDeliveriesCSV();
-
-    //populateDeliveriesDB();
-
     findTopEconomicalBowlers(req, res);
+
+})
+
+// most popular stadiums
+app.get('/api/mostPopularVenues', (req, res) => {
+
+    console.log("hello 5!");
+    findMostPopularVenues(req, res);
 
 })
 

@@ -30,7 +30,11 @@ function plotNoOfMatchesPlayed() {
                 // subtitle: {
                 //     text: 'Plain'
                 // },
-
+                yAxis: {
+                    title: {
+                        text: 'No. of matches'
+                    }
+                },
                 xAxis: {
                     categories: ['2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
                 },
@@ -112,7 +116,7 @@ function plotStackedBarGraph() {
                 yAxis: {
                     min: 0,
                     title: {
-                        text: 'number of matches won'
+                        text: 'No. of wins'
                     }
                 },
                 legend: {
@@ -210,7 +214,11 @@ function plotExtraRunsConceded() {
                 // subtitle: {
                 //     text: 'Plain'
                 // },
-
+                yAxis: {
+                    title: {
+                        text: 'No. of runs conceded'
+                    }
+                },
                 xAxis: {
                     categories: teams
                 },
@@ -237,6 +245,9 @@ function plotTopEconomicalBowlers() {
         contentType: 'application/json',
         success: function (items) {
             //items = JSON.parse(items);
+
+
+            console.log("dur dur: " + JSON.stringify(items));
             console.log("top ten economical bowlers: ", items);
             console.log("typeof items: ", typeof items);
 
@@ -272,6 +283,11 @@ function plotTopEconomicalBowlers() {
                 //     text: 'Plain'
                 // },
 
+                yAxis: {
+                    title: {
+                        text: 'runs (excluding bye & legbye runs) per over (excluding wide & no balls)'
+                    }
+                },
                 xAxis: {
                     categories: bowlers
                 },
@@ -290,4 +306,104 @@ function plotTopEconomicalBowlers() {
 
 }
 
-function plotStory() {}
+function plotStory() {
+
+    console.log("you clicked plot story");
+    $.ajax({
+        type: "get",
+        url: 'http://localhost:3000/api/mostPopularVenues',
+        contentType: 'application/json',
+        success: function (items) {
+
+            console.log("success");
+            console.log(items);
+            console.log(items[0]._id);
+            console.log(items[0].matchesPlayed);
+
+            let totalMatches = 0;
+            items.forEach(element => {
+                totalMatches += element.matchesPlayed;
+            });
+            console.log("Total matches: " + totalMatches);
+            let otherMatches = 636 - totalMatches;
+            console.log("Total matches: " + otherMatches);
+
+            Highcharts.chart('container', {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie'
+                },
+                title: {
+                    text: 'Percent of matches played at venues'
+                },
+                tooltip: {
+                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                            style: {
+                                color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Brands',
+                    colorByPoint: true,
+                    data: [{
+                            name: items[0]._id,
+                            y: items[0].matchesPlayed
+                        },
+                        {
+                            name: items[1]._id,
+                            y: items[1].matchesPlayed
+                        },
+                        {
+                            name: items[2]._id,
+                            y: items[2].matchesPlayed
+                        },
+                        {
+                            name: items[3]._id,
+                            y: items[3].matchesPlayed
+                        },
+                        {
+                            name: items[4]._id,
+                            y: items[4].matchesPlayed
+                        },
+                        {
+                            name: items[5]._id,
+                            y: items[5].matchesPlayed
+                        },
+                        {
+                            name: items[6]._id,
+                            y: items[6].matchesPlayed
+                        },
+                        {
+                            name: items[7]._id,
+                            y: items[7].matchesPlayed
+                        },
+                        {
+                            name: items[8]._id,
+                            y: items[8].matchesPlayed
+                        },
+                        {
+                            name: "Other",
+                            y: otherMatches,
+
+                            sliced: true,
+                            selected: true
+                        }
+                    ]
+                }]
+            });
+
+        }
+    });
+}
