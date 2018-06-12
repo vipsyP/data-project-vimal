@@ -8,7 +8,7 @@ function load() {
     });
 }
 
-// Graph 1
+// Graph 1 -- get necessary data
 function plotNoOfMatchesPlayed() {
     console.log("starting request to /api/numberOfMatches");
     $.ajax({
@@ -21,37 +21,38 @@ function plotNoOfMatchesPlayed() {
             }
             console.log("count of matches array: ", items);
 
-            var chart = Highcharts.chart('container', {
-
-                title: {
-                    text: 'No. of matches played each year'
-                },
-
-                // subtitle: {
-                //     text: 'Plain'
-                // },
-                yAxis: {
-                    title: {
-                        text: 'No. of matches'
-                    }
-                },
-                xAxis: {
-                    categories: ['2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
-                },
-
-                series: [{
-                    type: 'column',
-                    colorByPoint: true,
-                    data: items,
-                    showInLegend: false
-                }]
-
-            });
+            drawNoOfMatchesPlayed(items);
         }
     })
 }
 
-// Graph 2
+function drawNoOfMatchesPlayed(items) {
+    var chart = Highcharts.chart('container', {
+
+        title: {
+            text: 'No. of matches played each year'
+        },
+
+        yAxis: {
+            title: {
+                text: 'No. of matches'
+            }
+        },
+        xAxis: {
+            categories: ['2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
+        },
+
+        series: [{
+            type: 'column',
+            colorByPoint: true,
+            data: items,
+            showInLegend: false
+        }]
+
+    });
+}
+
+// Graph 2 -- get necessary data
 function plotStackedBarGraph() {
     console.log("starting request to /api/stackedBarGraph");
 
@@ -60,102 +61,70 @@ function plotStackedBarGraph() {
         url: 'http://localhost:3000/api/stackedBarGraph',
         contentType: 'application/json',
         success: function (itemsOfItems) {
+            let teams = [];
 
+            for(items of itemsOfItems[0]) {
+                teams.push(items._id);
+            }
+        console.log("The teams are: "+teams);
+
+        console.log("original itemsOfItems: "+JSON.stringify(itemsOfItems));
             // retain only the count values
+
+            let seriesArr = [];
+            let series = [];
+            let seriesObj = [];
+            
             let arrayOfArrays = [];
             let arrays = [];
 
+            let i = 2008;
             for (items of itemsOfItems) {
                 arrays = [];
                 for (item of items) {
                     arrays.push(item.count);
                 }
-                arrayOfArrays.push(arrays);
+                seriesObj = {name: ""+i, data: arrays};
+                arrayOfArrays.push(seriesObj);
+                i++;
+                //console.log("i is: " +i);
             }
-            console.log(arrayOfArrays);
+            //console.log(arrayOfArrays);
             itemsOfItems = arrayOfArrays;
 
             console.log("count of matches won by each team over the years array: ", itemsOfItems);
 
-            Highcharts.chart('container', {
-                chart: {
-                    type: 'bar'
-                },
-                title: {
-                    text: 'No. of matches won by the teams each year'
-                },
-                xAxis: {
-                    categories: ["Chennai Super Kings",
-                        "Deccan Chargers",
-                        "Delhi Daredevils",
-                        "Gujarat Lions",
-                        "Kings XI Punjab",
-                        "Kochi Tuskers Kerala",
-                        "Kolkata Knight Riders",
-                        "Mumbai Indians",
-                        "Pune Warriors",
-                        "Rajasthan Royals",
-                        "Rising Pune Supergiant",
-                        "Rising Pune Supergiants",
-                        "Royal Challengers Bangalore",
-                        "Sunrisers Hyderabad"
-                    ]
-                },
-                yAxis: {
-                    min: 0,
-                    title: {
-                        text: 'No. of wins'
-                    }
-                },
-                legend: {
-                    reversed: true
-                },
-                plotOptions: {
-                    series: {
-                        stacking: 'normal'
-                    }
-                },
-                series: [{
-                        name: '2008',
-                        data: itemsOfItems[0]
-                    }, {
-                        name: '2009',
-                        data: itemsOfItems[1]
-                    }, {
-                        name: '2010',
-                        data: itemsOfItems[2]
-                    },
-                    {
-                        name: '2011',
-                        data: itemsOfItems[3]
-                    },
-                    {
-                        name: '2012',
-                        data: itemsOfItems[4]
-                    },
-                    {
-                        name: '2013',
-                        data: itemsOfItems[5]
-                    },
-                    {
-                        name: '2014',
-                        data: itemsOfItems[6]
-                    },
-                    {
-                        name: '2015',
-                        data: itemsOfItems[7]
-                    },
-                    {
-                        name: '2016',
-                        data: itemsOfItems[8]
-                    },
-                    {
-                        name: '2017',
-                        data: itemsOfItems[9]
-                    }
-                ]
-            });
+            drawStackedBarGraph(teams, itemsOfItems)
         }
+    });
+}
+
+function drawStackedBarGraph(teams, itemsOfItems) {
+    Highcharts.chart('container', {
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: 'No. of matches won by the teams each year'
+        },
+        xAxis: {
+            categories: teams
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'No. of wins'
+            }
+        },
+        legend: {
+            reversed: true
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal'
+            }
+        },
+        series: itemsOfItems
     });
 }
 
@@ -182,7 +151,12 @@ function plotExtraRunsConceded() {
                 teams.push(item._id);
                 extra_runs.push(item.total);
             }
+            drawExtraRunsConceded(teams, extra_runs);
+        }
+    });
+}
 
+function drawExtraRunsConceded(teams, extra_runs) {
             var chart = Highcharts.chart('container', {
 
                 title: {
@@ -205,8 +179,6 @@ function plotExtraRunsConceded() {
                     showInLegend: false
                 }]
             });
-        }
-    });
 }
 
 // Graph 4
@@ -243,30 +215,37 @@ function plotTopEconomicalBowlers() {
                 console.log("economy item: ", economy_item);
             }
 
-            var chart = Highcharts.chart('container', {
-
-                title: {
-                    text: 'Top ten economical bowlers'
-                },
-
-                yAxis: {
-                    title: {
-                        text: 'runs (excluding bye & legbye runs) per over (excluding wide & no balls)'
-                    }
-                },
-                xAxis: {
-                    categories: bowlers
-                },
-
-                series: [{
-                    type: 'column',
-                    colorByPoint: true,
-                    data: economy,
-                    showInLegend: false
-                }]
-            });
+            drawTopEconomicalBowlers(bowlers, economy);
         }
     });
+}
+
+
+function drawTopEconomicalBowlers() {
+
+    var chart = Highcharts.chart('container', {
+
+        title: {
+            text: 'Top ten economical bowlers'
+        },
+
+        yAxis: {
+            title: {
+                text: 'runs (excluding bye & legbye runs) per over (excluding wide & no balls)'
+            }
+        },
+        xAxis: {
+            categories: bowlers
+        },
+
+        series: [{
+            type: 'column',
+            colorByPoint: true,
+            data: economy,
+            showInLegend: false
+        }]
+    });
+
 }
 
 // Graph 5
@@ -280,9 +259,9 @@ function plotStory() {
         success: function (items) {
 
             console.log("success");
-            console.log(items);
-            console.log(items[0]._id);
-            console.log(items[0].matchesPlayed);
+            console.log("These are the items: "+JSON.stringify(items));
+            //console.log(items[0]._id);
+            //console.log(items[0].matchesPlayed);
 
             let totalMatches = 0;
             items.forEach(element => {
@@ -292,81 +271,53 @@ function plotStory() {
             let otherMatches = 636 - totalMatches;
             console.log("Total matches: " + otherMatches);
 
-            Highcharts.chart('container', {
-                chart: {
-                    plotBackgroundColor: null,
-                    plotBorderWidth: null,
-                    plotShadow: false,
-                    type: 'pie'
-                },
-                title: {
-                    text: 'Percent of matches played at venues'
-                },
-                tooltip: {
-                    pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-                },
-                plotOptions: {
-                    pie: {
-                        allowPointSelect: true,
-                        cursor: 'pointer',
-                        dataLabels: {
-                            enabled: true,
-                            format: '<b>{point.name}</b>: {point.percentage:.1f} %',
-                            style: {
-                                color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                            }
-                        }
-                    }
-                },
-                series: [{
-                    name: 'Brands',
-                    colorByPoint: true,
-                    data: [{
-                            name: items[0]._id,
-                            y: items[0].matchesPlayed
-                        },
-                        {
-                            name: items[1]._id,
-                            y: items[1].matchesPlayed
-                        },
-                        {
-                            name: items[2]._id,
-                            y: items[2].matchesPlayed
-                        },
-                        {
-                            name: items[3]._id,
-                            y: items[3].matchesPlayed
-                        },
-                        {
-                            name: items[4]._id,
-                            y: items[4].matchesPlayed
-                        },
-                        {
-                            name: items[5]._id,
-                            y: items[5].matchesPlayed
-                        },
-                        {
-                            name: items[6]._id,
-                            y: items[6].matchesPlayed
-                        },
-                        {
-                            name: items[7]._id,
-                            y: items[7].matchesPlayed
-                        },
-                        {
-                            name: items[8]._id,
-                            y: items[8].matchesPlayed
-                        },
-                        {
-                            name: "Other",
-                            y: otherMatches,
-
-                            sliced: true,
-                            selected: true
-                        }
-                    ]
-                }]
+            let seriesArray = [];
+            let seriesObj;
+            items.forEach(element => {
+                seriesObj = {name: element._id, y: element.matchesPlayed};
+                seriesArray.push(seriesObj);
             });
+            seriesObj = {name: "Other", y: otherMatches, sliced: true, selected: true};
+            seriesArray.push(seriesObj);
+            console.log("The series array is: "+JSON.stringify(seriesArray));
+
+            drawStory(seriesArray)
         }
+    });
+}
+
+function drawStory (seriesArray) {
+
+    Highcharts.chart('container', {
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            type: 'pie'
+        },
+        title: {
+            text: 'Percent of matches played at venues'
+        },
+        tooltip: {
+            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: true,
+                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                    style: {
+                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                    }
+                }
+            }
+        },
+        series: [{
+            name: 'Brands',
+            colorByPoint: true,
+            data: seriesArray
+        }]
     });
 }
