@@ -93,7 +93,7 @@ function findNoOfMatchesPlayed(req, res) {
     let playedPromise = new Promise(function (resolve, reject) {
         for (let i = 2008; i <= 2017; i++) {
             MatchModel.count({
-                season: i.toString()
+                season: i
             }, function (err, c) {
                 if (err) {
                     console.log("count error: " + err);
@@ -193,7 +193,7 @@ async function findNoOfMatchesWon(req, res) {
 
         MatchModel.aggregate([{
             $match: {
-                season: year,
+                season: Number(year),
                 result: "normal"
             }
         }, {

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 var MatchSchema = mongoose.Schema({
   // year: String    // change type to date?
   id: String,
-  season: String,
+  season: Number,
   city: String,
   date: String,
   team1: String,
