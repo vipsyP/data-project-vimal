@@ -61,45 +61,30 @@ function plotStackedBarGraph() {
         url: 'http://localhost:3000/api/stackedBarGraph',
         contentType: 'application/json',
         success: function (itemsOfItems) {
-            let teams = [];
 
-            for(items of itemsOfItems[0]) {
-                teams.push(items._id);
-            }
-        console.log("The teams are: "+teams);
+            console.log("Recieved: "+JSON.stringify( itemsOfItems));
+            console.log("Recieved: "+JSON.stringify( itemsOfItems.winnerData));
+            console.log("Data: "+JSON.stringify( itemsOfItems.winnerData[0].data));
 
-        console.log("original itemsOfItems: "+JSON.stringify(itemsOfItems));
-            // retain only the count values
+            let years = itemsOfItems.winnerData[0].data.map((year, index)=>{
+                return index+2008;
+            });
+            let series = itemsOfItems.winnerData.map((team, index)=>{
+                return({name: team.name, data: team.data});
+            });
+            console.log(years)
+            console.log(series);
 
-            let seriesArr = [];
-            let series = [];
-            let seriesObj = [];
-            
-            let arrayOfArrays = [];
-            let arrays = [];
-
-            let i = 2008;
-            for (items of itemsOfItems) {
-                arrays = [];
-                for (item of items) {
-                    arrays.push(item.count);
-                }
-                seriesObj = {name: ""+i, data: arrays};
-                arrayOfArrays.push(seriesObj);
-                i++;
-                //console.log("i is: " +i);
-            }
-            //console.log(arrayOfArrays);
-            itemsOfItems = arrayOfArrays;
-
-            console.log("count of matches won by each team over the years array: ", itemsOfItems);
-
-            drawStackedBarGraph(teams, itemsOfItems)
+            // let winsByTeamsPerYear = itemsOfItems.winnerData.map((winsByTeams, index)=>{
+            //     return ;
+            // });
+            // console.log(winsByTeamsPerYear);
+            drawStackedBarGraph(years, series)
         }
     });
 }
 
-function drawStackedBarGraph(teams, itemsOfItems) {
+function drawStackedBarGraph(years, series) {
     Highcharts.chart('container', {
         chart: {
             type: 'bar'
@@ -108,7 +93,7 @@ function drawStackedBarGraph(teams, itemsOfItems) {
             text: 'No. of matches won by the teams each year'
         },
         xAxis: {
-            categories: teams
+            categories: years
         },
         yAxis: {
             min: 0,
@@ -124,7 +109,7 @@ function drawStackedBarGraph(teams, itemsOfItems) {
                 stacking: 'normal'
             }
         },
-        series: itemsOfItems
+        series: series
     });
 }
 

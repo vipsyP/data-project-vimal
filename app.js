@@ -148,7 +148,6 @@ async function findNoOfMatchesWon(req, res) {
 
     yearsResult.forEach(function (arrayItem) {
         //console.log("Years item: " + arrayItem);
-        if (arrayItem.season.trim() != "")
             years.add(arrayItem.season);
     });
     console.log("Years length: " + years.size);
@@ -183,92 +182,46 @@ async function findNoOfMatchesWon(req, res) {
     console.log("teams.size: " + teams.size);
     console.log("years.size: " + years.size);
 
-    // get relevant data from db
-    let allTeamsAllSeasons = [];
-    let i = 0;
-    let teamsThatPlayedThisYear; // array of teams that did play this season
-    let teamThatDidntPlayThisYear; // team that did not play this season
+    let objs = csvToJson.fieldDelimiter(',').getJsonFromCsv("csv/matches.csv");
 
-    for (let year of years) {
-
-        MatchModel.aggregate([{
-            $match: {
-                season: Number(year),
-                result: "normal"
-            }
-        }, {
-            $group: {
-                _id: '$winner',
-                count: {
-                    $sum: 1
-                }
-            }
-        }, {
-            $sort: {
-                _id: 1
-            }
-        }], function (err, allTeamsThisYear) {
-            if (err) {
-                console.log("error bro: " + err);
+    let teamsThisYear = {};
+    let winnerPerYear = objs.reduce((acc, obj) => {
+        teamsThisYear = {};
+        console.log(JSON.stringify(obj));
+        console.log(JSON.stringify(obj.season) +", "+ JSON.stringify(obj.winner)+"\n\n\n");
+        if (obj.season in acc) {
+            if (acc[obj.season][obj.winner]) {
+                acc[obj.season][obj.winner]++;
             } else {
-                console.log("\n\nYear: " + year);
-                allTeamsThisYear.forEach(function (element) {
-                    console.log("" + element._id + " won " + element.count + " matches");
-                });
-
-                console.log("allTeamsThisYear: " + allTeamsThisYear);
-
-                //insert teams who did not play during this season & set count to 0
-
-                //array of teams that did play for this season
-                teamsThatPlayedThisYear = [];
-                for (let item of allTeamsThisYear) {
-                    teamsThatPlayedThisYear.push(item._id);
-                }
-                console.log("teamsThatPlayedThisYear: " + teamsThatPlayedThisYear);
-
-                // iterate through all the teams, and check who did not play this year
-                for (let team of teams) {
-
-                    // if this team did not play this year, add it to this year with count=0
-                    if (teamsThatPlayedThisYear.indexOf(team) == -1) {
-                        console.log("year " + year + ", missing team: " + team);
-                        teamThatDidntPlayThisYear = {
-                            _id: team,
-                            count: 0
-                        };
-                        allTeamsThisYear.push(teamThatDidntPlayThisYear);
-                        console.log("new allTeamsThisYear: ");
-                        for (resu of allTeamsThisYear) {
-                            console.log(resu);
-                        }
-                        console.log("___________________________________________________");
-                    }
-                }
-                console.log();
-                console.log("*********************SORT IT***********************");
-                console.log("___________________________________________________");
-                console.log();
-                //sort allTeamsThisYear objects by ._id
-                allTeamsThisYear.sort(compare_ID);
-                for (resu of allTeamsThisYear) {
-                    console.log(resu);
-                }
-
-                allTeamsAllSeasons[year - 2008] = allTeamsThisYear;
-
-                if (i == Number(years.size) - 1) {
-                    console.log("final i: " + i + ", year.size: " + years.size);
-
-                    res.send(allTeamsAllSeasons);
-
-                }
-                console.log("i: " + i + ", year.size: " + years.size);
-                i++;
-                console.log("this also");
+                acc[obj.season][obj.winner] = 1;
             }
-        });
-    }
+        } else {
+            teamsThisYear[obj.winner] = 1;
+            acc[obj.season] = teamsThisYear;
+ 
+        }
+        return acc;
+    }, {});
+    let teamsArray = Array.from(teams);
+    let winner = Object.values(winnerPerYear);
+    //console.log("winner: "+JSON.stringify(winner));
+    let winnerData = teamsArray.map((name) => {
+        var wins = winner.map((data) => {
+            if (typeof (data[name]) == "undefined") {
+                return 0;
+            } else {
+                return data[name];
+            }
+ 
+        })
+        return {
+            'name': name,
+            'data': wins
+        };
+    });
+
+    console.log("The data is: "+winnerPerYear);
+    res.send({winnerData});
 }
 
 function findExtraRunsConceded(req, res) {
