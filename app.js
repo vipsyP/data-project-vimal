@@ -226,37 +226,29 @@ async function findNoOfMatchesWon(req, res) {
 
 function findExtraRunsConceded(req, res) {
 
-    DeliveryModel.aggregate([{
+   let matchObjs = csvToJson.fieldDelimiter(',').getJsonFromCsv("csv/matches.csv");
+   let deliveryObjs = csvToJson.fieldDelimiter(',').getJsonFromCsv("csv/deliveries.csv");
 
-            // match 2016
-            $match: {
-                match_id: {
-                    $lt: 637
-                },
-                match_id: {
-                    $gt: 576
-                }
-            }
-        },
-        // group documents by bowling team
-        // sum extra runs field for each bowling team
-        {
-            $group: {
-                _id: '$bowling_team',
-                total: {
-                    $sum: "$extra_runs"
-                }
-            }
-        },
-        {
-            $sort: {
-                _id: 1
-            }
-        }
-    ], function (err, result) {
-        console.log(JSON.stringify(result));
-        res.send(result);
-    });
+   let matchId = matchObjs.filter((data) => {
+       return (data["season"] == "2016");
+   }).map((key) => {
+       return key.id;
+   });
+   let file = deliveryObjs.filter((data) => {
+       return (matchId.includes(data["match_id"]));
+   });
+   let extraRuns = file.reduce(function (acc, data) {
+       if (data.bowling_team in acc) {
+           acc[data.bowling_team] += parseInt(data["extra_runs"]);
+       } else {
+           acc[data.bowling_team] = parseInt(data["extra_runs"]);
+       }
+       return acc;
+   }, {});
+   
+
+   console.log(extraRuns);
+   res.send(extraRuns);
 
 }
 

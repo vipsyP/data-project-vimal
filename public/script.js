@@ -75,10 +75,6 @@ function plotStackedBarGraph() {
             console.log(years)
             console.log(series);
 
-            // let winsByTeamsPerYear = itemsOfItems.winnerData.map((winsByTeams, index)=>{
-            //     return ;
-            // });
-            // console.log(winsByTeamsPerYear);
             drawStackedBarGraph(years, series)
         }
     });
@@ -129,13 +125,12 @@ function plotExtraRunsConceded() {
                 return false;
             }
 
-            teams = [];
-            extra_runs = [];
+            let teams = Object.keys(items);
+            let extra_runs = Object.values(items);
 
-            for (item of items) {
-                teams.push(item._id);
-                extra_runs.push(item.total);
-            }
+            console.log(teams);
+            console.log(extra_runs);
+
             drawExtraRunsConceded(teams, extra_runs);
         }
     });
